@@ -1,10 +1,6 @@
 //! Process management syscalls
 use crate::{
-    syscall::{
-        SYSCALL_EXIT, SYSCALL_EXIT_COUNT, SYSCALL_GET_TIME, SYSCALL_GET_TIME_COUNT, SYSCALL_TRACE,
-        SYSCALL_TRACE_COUNT, SYSCALL_WRITE, SYSCALL_WRITE_COUNT, SYSCALL_YIELD,
-        SYSCALL_YIELD_COUNT,
-    },
+    syscall::*,
     task::{exit_current_and_run_next, suspend_current_and_run_next},
     timer::get_time_us,
 };

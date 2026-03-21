@@ -1,9 +1,6 @@
 //! File and filesystem-related syscalls
 
-use crate::syscall::{
-    SYSCALL_EXIT_COUNT, SYSCALL_GET_TIME_COUNT, SYSCALL_TRACE_COUNT, SYSCALL_WRITE_COUNT,
-    SYSCALL_YIELD_COUNT,
-};
+use crate::syscall::SYSCALL_WRITE_COUNT;
 
 const FD_STDOUT: usize = 1;
 
