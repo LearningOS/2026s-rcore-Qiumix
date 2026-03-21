@@ -1,6 +1,11 @@
 //! Process management syscalls
 use crate::{
-    task::{exit_current_and_run_next, suspend_current_and_run_next, TASK_MANAGER},
+    syscall::{
+        SYSCALL_EXIT, SYSCALL_EXIT_COUNT, SYSCALL_GET_TIME, SYSCALL_GET_TIME_COUNT, SYSCALL_TRACE,
+        SYSCALL_TRACE_COUNT, SYSCALL_WRITE, SYSCALL_WRITE_COUNT, SYSCALL_YIELD,
+        SYSCALL_YIELD_COUNT,
+    },
+    task::{exit_current_and_run_next, suspend_current_and_run_next},
     timer::get_time_us,
 };
 
@@ -13,6 +18,9 @@ pub struct TimeVal {
 
 /// task exits and submit an exit code
 pub fn sys_exit(exit_code: i32) -> ! {
+    unsafe {
+        SYSCALL_EXIT_COUNT += 1;
+    }
     trace!("[kernel] Application exited with code {}", exit_code);
     exit_current_and_run_next();
     panic!("Unreachable in sys_exit!");
@@ -20,6 +28,9 @@ pub fn sys_exit(exit_code: i32) -> ! {
 
 /// current task gives up resources for other tasks
 pub fn sys_yield() -> isize {
+    unsafe {
+        SYSCALL_YIELD_COUNT += 1;
+    }
     trace!("kernel: sys_yield");
     suspend_current_and_run_next();
     0
@@ -27,6 +38,9 @@ pub fn sys_yield() -> isize {
 
 /// get time with second and microsecond
 pub fn sys_get_time(ts: *mut TimeVal, _tz: usize) -> isize {
+    unsafe {
+        SYSCALL_GET_TIME_COUNT += 1;
+    }
     trace!("kernel: sys_get_time");
     let us = get_time_us();
     unsafe {
@@ -40,23 +54,9 @@ pub fn sys_get_time(ts: *mut TimeVal, _tz: usize) -> isize {
 
 // TODO: implement the syscall
 pub fn sys_trace(_trace_request: usize, _id: usize, _data: usize) -> isize {
-    // From xv6 lab: syscall
-    // uint64 sys_trace(void) {
-    //   int mask;
-    //   if (argint(0, &mask) < 0)
-    //     return -1;
-    //   myproc()->mask = mask;
-    //   return 0;
-    // }
-    //
-    // pub struct TaskContext {
-    //     /// Ret position after task switching
-    //     ra: usize,
-    //     /// Stack pointer
-    //     sp: usize,
-    //     /// s0-11 register, callee saved
-    //     s: [usize; 12],
-    // }
+    unsafe {
+        SYSCALL_TRACE_COUNT += 1;
+    }
     trace!("kernel: sys_trace");
     if _trace_request == 0 {
         unsafe { *(_id as *const u8) as isize }
@@ -67,8 +67,21 @@ pub fn sys_trace(_trace_request: usize, _id: usize, _data: usize) -> isize {
         }
         0
     } else if _trace_request == 2 {
-        -1
+        syscall_count(_id) as isize
     } else {
         -1
+    }
+}
+
+fn syscall_count(syscall_id: usize) -> usize {
+    unsafe {
+        match syscall_id {
+            SYSCALL_WRITE => SYSCALL_WRITE_COUNT,
+            SYSCALL_EXIT => SYSCALL_EXIT_COUNT,
+            SYSCALL_YIELD => SYSCALL_YIELD_COUNT,
+            SYSCALL_GET_TIME => SYSCALL_GET_TIME_COUNT,
+            SYSCALL_TRACE => SYSCALL_TRACE_COUNT,
+            _ => panic!("Unsupported syscall_id: {}", syscall_id),
+        }
     }
 }
