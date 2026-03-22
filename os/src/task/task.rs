@@ -9,6 +9,28 @@ pub struct TaskControlBlock {
     pub task_status: TaskStatus,
     /// The task context
     pub task_cx: TaskContext,
+    /// save syscall counter
+    pub syscall_counter: SyscallCounter,
+}
+
+#[derive(Copy, Clone)]
+pub struct SyscallCounter {
+    pub syscall_write_count: usize,
+    pub syscall_exit_count: usize,
+    pub syscall_yield_count: usize,
+    pub syscall_get_time_count: usize,
+    pub syscall_trace_count: usize,
+}
+impl SyscallCounter {
+    pub fn new() -> Self {
+        SyscallCounter {
+            syscall_write_count: 0,
+            syscall_exit_count: 0,
+            syscall_yield_count: 0,
+            syscall_get_time_count: 0,
+            syscall_trace_count: 0,
+        }
+    }
 }
 
 /// The status of a task
