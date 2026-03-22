@@ -6,6 +6,7 @@ const FD_STDOUT: usize = 1;
 
 /// write buf of length `len`  to a file with `fd`
 pub fn sys_write(fd: usize, buf: *const u8, len: usize) -> isize {
+    // FIX:
     unsafe {
         SYSCALL_WRITE_COUNT += 1;
     }

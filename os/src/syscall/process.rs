@@ -55,14 +55,17 @@ pub fn sys_trace(_trace_request: usize, _id: usize, _data: usize) -> isize {
     }
     trace!("kernel: sys_trace");
     if _trace_request == 0 {
+        // return u8 pointed by _id
         unsafe { *(_id as *const u8) as isize }
     } else if _trace_request == 1 {
         let data = (_data & 0xFF) as u8;
         unsafe {
+            // assign data to the u8 pointed by _id
             *(_id as *mut u8) = data;
         }
         0
     } else if _trace_request == 2 {
+        // return syscall counts
         syscall_count(_id) as isize
     } else {
         -1
