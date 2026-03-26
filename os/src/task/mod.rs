@@ -46,6 +46,7 @@ pub struct TaskManagerInner {
     tasks: [TaskControlBlock; MAX_APP_NUM],
     /// id of current `Running` task
     current_task: usize,
+    counters: [SyscallCounter; MAX_APP_NUM],
 }
 
 lazy_static! {
@@ -67,6 +68,7 @@ lazy_static! {
                 UPSafeCell::new(TaskManagerInner {
                     tasks,
                     current_task: 0,
+                    counters: [SyscallCounter::new(); MAX_APP_NUM]
                 })
             },
         }
@@ -115,6 +117,11 @@ impl TaskManager {
         (current + 1..current + self.num_app + 1)
             .map(|id| id % self.num_app)
             .find(|id| inner.tasks[*id].task_status == TaskStatus::Ready)
+    }
+    ///
+    pub fn get_cur_counter(&self) -> SyscallCounter {
+        let inner = self.inner.exclusive_access();
+        inner.counters[inner.current_task]
     }
 
     /// Switch current `Running` task to the task we have found,

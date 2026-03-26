@@ -1,7 +1,7 @@
 //! Process management syscalls
 use crate::{
     syscall::*,
-    task::{exit_current_and_run_next, get_next_task, suspend_current_and_run_next, TASK_MANAGER},
+    task::{exit_current_and_run_next, suspend_current_and_run_next, TASK_MANAGER},
     timer::get_time_us,
 };
 
@@ -50,10 +50,8 @@ pub fn sys_get_time(ts: *mut TimeVal, _tz: usize) -> isize {
 
 // TODO: implement the syscall
 pub fn sys_trace(_trace_request: usize, _id: usize, _data: usize) -> isize {
-    let task_id = get_next_task();
-    unsafe {
-        SYSCALL_TRACE_COUNT += 1;
-    }
+    let mut cur_counter = TASK_MANAGER.get_cur_counter();
+    cur_counter.syscall_trace_count += 1;
     trace!("kernel: sys_trace");
     if _trace_request == 0 {
         // return u8 pointed by _id
@@ -67,21 +65,15 @@ pub fn sys_trace(_trace_request: usize, _id: usize, _data: usize) -> isize {
         0
     } else if _trace_request == 2 {
         // return syscall counts
-        syscall_count(_id) as isize
+        match _id {
+            SYSCALL_WRITE => cur_counter.syscall_write_count as isize,
+            SYSCALL_EXIT => cur_counter.syscall_exit_count as isize,
+            SYSCALL_YIELD => cur_counter.syscall_yield_count as isize,
+            SYSCALL_GET_TIME => cur_counter.syscall_get_time_count as isize,
+            SYSCALL_TRACE => cur_counter.syscall_trace_count as isize,
+            _ => panic!("Unsupported syscall_id: {}", _id),
+        }
     } else {
         -1
-    }
-}
-
-fn syscall_count(syscall_id: usize) -> usize {
-    unsafe {
-        match syscall_id {
-            SYSCALL_WRITE => SYSCALL_WRITE_COUNT,
-            SYSCALL_EXIT => SYSCALL_EXIT_COUNT,
-            SYSCALL_YIELD => SYSCALL_YIELD_COUNT,
-            SYSCALL_GET_TIME => SYSCALL_GET_TIME_COUNT,
-            SYSCALL_TRACE => SYSCALL_TRACE_COUNT,
-            _ => panic!("Unsupported syscall_id: {}", syscall_id),
-        }
     }
 }
