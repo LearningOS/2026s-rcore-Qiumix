@@ -17,6 +17,7 @@ mod task;
 use crate::config::MAX_APP_NUM;
 use crate::loader::{get_num_app, init_app_cx};
 use crate::sync::UPSafeCell;
+use crate::syscall::{SYSCALL_EXIT, SYSCALL_GET_TIME, SYSCALL_TRACE, SYSCALL_WRITE, SYSCALL_YIELD};
 use crate::task::task::SyscallCounter;
 use lazy_static::*;
 use switch::__switch;
@@ -122,6 +123,33 @@ impl TaskManager {
     pub fn get_cur_counter(&self) -> SyscallCounter {
         let inner = self.inner.exclusive_access();
         inner.counters[inner.current_task]
+    }
+
+    ///
+    pub fn increment_syscall_count(&self, id: usize) {
+        let mut inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        match id {
+            SYSCALL_WRITE => inner.tasks[current].syscall_counter.syscall_write_count += 1,
+            SYSCALL_EXIT => inner.tasks[current].syscall_counter.syscall_exit_count += 1,
+            SYSCALL_YIELD => inner.tasks[current].syscall_counter.syscall_yield_count += 1,
+            SYSCALL_GET_TIME => inner.tasks[current].syscall_counter.syscall_get_time_count += 1,
+            SYSCALL_TRACE => inner.tasks[current].syscall_counter.syscall_trace_count += 1,
+            _ => panic!("Unsupported syscall_id: {}", id),
+        }
+    }
+    ///
+    pub fn get_current_syscall_count(&self, syscall_id: usize) -> usize {
+        let inner = self.inner.exclusive_access();
+        let c = &inner.counters[inner.current_task];
+        match syscall_id {
+            SYSCALL_WRITE => c.syscall_write_count,
+            SYSCALL_EXIT => c.syscall_exit_count,
+            SYSCALL_YIELD => c.syscall_yield_count,
+            SYSCALL_GET_TIME => c.syscall_get_time_count,
+            SYSCALL_TRACE => c.syscall_trace_count,
+            _ => 0,
+        }
     }
 
     /// Switch current `Running` task to the task we have found,
