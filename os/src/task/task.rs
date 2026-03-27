@@ -6,6 +6,26 @@ use crate::mm::{
 };
 use crate::trap::{trap_handler, TrapContext};
 
+pub struct SyscallCounter {
+    pub syscall_write_count: usize,
+    pub syscall_exit_count: usize,
+    pub syscall_yield_count: usize,
+    pub syscall_get_time_count: usize,
+    pub syscall_trace_count: usize,
+}
+
+impl SyscallCounter {
+    pub fn new() -> Self {
+        SyscallCounter {
+            syscall_write_count: 0,
+            syscall_exit_count: 0,
+            syscall_yield_count: 0,
+            syscall_get_time_count: 0,
+            syscall_trace_count: 0,
+        }
+    }
+}
+
 /// The task control block (TCB) of a task.
 pub struct TaskControlBlock {
     /// Save task context
@@ -28,6 +48,9 @@ pub struct TaskControlBlock {
 
     /// Program break
     pub program_brk: usize,
+
+    // Syscall counters
+    pub counters: SyscallCounter,
 }
 
 impl TaskControlBlock {
@@ -63,6 +86,7 @@ impl TaskControlBlock {
             base_size: user_sp,
             heap_bottom: user_sp,
             program_brk: user_sp,
+            counters: SyscallCounter::new(),
         };
         // prepare TrapContext in user space
         let trap_cx = task_control_block.get_trap_cx();
@@ -75,6 +99,7 @@ impl TaskControlBlock {
         );
         task_control_block
     }
+
     /// change the location of the program break. return None if failed.
     pub fn change_program_brk(&mut self, size: i32) -> Option<usize> {
         let old_break = self.program_brk;

@@ -15,7 +15,9 @@ mod switch;
 mod task;
 
 use crate::loader::{get_app_data, get_num_app};
+use crate::mm::{MemorySet, PageTable};
 use crate::sync::UPSafeCell;
+use crate::syscall::{SYSCALL_EXIT, SYSCALL_GET_TIME, SYSCALL_TRACE, SYSCALL_WRITE, SYSCALL_YIELD};
 use crate::trap::TrapContext;
 use alloc::vec::Vec;
 use lazy_static::*;
@@ -133,6 +135,35 @@ impl TaskManager {
         inner.tasks[cur].change_program_brk(size)
     }
 
+    ///
+    pub fn get_current_syscall_count(&self, syscall_id: usize) -> usize {
+        let inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        let c = &inner.tasks[current].counters;
+        match syscall_id {
+            SYSCALL_WRITE => c.syscall_write_count,
+            SYSCALL_EXIT => c.syscall_exit_count,
+            SYSCALL_YIELD => c.syscall_yield_count,
+            SYSCALL_GET_TIME => c.syscall_get_time_count,
+            SYSCALL_TRACE => c.syscall_trace_count,
+            _ => 0,
+        }
+    }
+
+    ///
+    pub fn increment_syscall_count(&self, id: usize) {
+        let mut inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        match id {
+            SYSCALL_WRITE => inner.tasks[current].counters.syscall_write_count += 1,
+            SYSCALL_EXIT => inner.tasks[current].counters.syscall_exit_count += 1,
+            SYSCALL_YIELD => inner.tasks[current].counters.syscall_yield_count += 1,
+            SYSCALL_GET_TIME => inner.tasks[current].counters.syscall_get_time_count += 1,
+            SYSCALL_TRACE => inner.tasks[current].counters.syscall_trace_count += 1,
+            _ => {} // panic!("Unsupported syscall_id: {}", id),
+        }
+    }
+
     /// Switch current `Running` task to the task we have found,
     /// or there is no `Ready` task and we can exit with all applications completed
     fn run_next_task(&self) {
@@ -158,6 +189,19 @@ impl TaskManager {
 /// Run the first task in task list.
 pub fn run_first_task() {
     TASK_MANAGER.run_first_task();
+}
+
+/// Get pagetable token of current task.
+fn get_pagetable_token() -> usize {
+    let inner = &TASK_MANAGER.inner.exclusive_access();
+    let cur = inner.current_task;
+    let memset = &(inner.tasks[cur].memory_set);
+    memset.token()
+}
+/// Get pagetable of current task.
+pub fn get_pagetable() -> PageTable {
+    let token = get_pagetable_token();
+    PageTable::from_token(token)
 }
 
 /// Switch current `Running` task to the task we have found,

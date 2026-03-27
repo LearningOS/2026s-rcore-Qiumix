@@ -1,5 +1,12 @@
 //! Process management syscalls
-use crate::task::{change_program_brk, exit_current_and_run_next, suspend_current_and_run_next};
+
+use crate::{
+    mm::PageTable,
+    task::{
+        change_program_brk, exit_current_and_run_next, get_pagetable, suspend_current_and_run_next,
+        TASK_MANAGER,
+    },
+};
 
 #[repr(C)]
 #[derive(Debug)]
@@ -34,7 +41,34 @@ pub fn sys_get_time(_ts: *mut TimeVal, _tz: usize) -> isize {
 /// HINT: You might reimplement it with virtual memory management.
 pub fn sys_trace(_trace_request: usize, _id: usize, _data: usize) -> isize {
     trace!("kernel: sys_trace");
-    -1
+    match _trace_request {
+        0 => {
+            let vpn = crate::mm::VirtPageNum::from(_id);
+            let pagetable: PageTable = get_pagetable();
+            let pte = pagetable.translate(vpn);
+            match pte {
+                None => -1,
+                Some(_) => {
+                    todo!()
+                }
+            }
+        }
+        1 => {
+            let vpn = crate::mm::VirtPageNum::from(_id);
+            let pagetable: PageTable = get_pagetable();
+            let pte = pagetable.translate(vpn);
+            match pte {
+                None => -1,
+                Some(pte) => {
+                    let ppn = pte.ppn();
+                    0;
+                    todo!()
+                }
+            }
+        }
+        2 => TASK_MANAGER.get_current_syscall_count(_id) as isize,
+        _ => -1,
+    }
 }
 
 // YOUR JOB: Implement mmap.
