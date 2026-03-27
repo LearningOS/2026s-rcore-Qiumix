@@ -1,6 +1,5 @@
 //! Process management syscalls
 use crate::{
-    syscall::*,
     task::{exit_current_and_run_next, suspend_current_and_run_next, TASK_MANAGER},
     timer::get_time_us,
 };

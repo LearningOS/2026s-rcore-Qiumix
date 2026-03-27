@@ -130,18 +130,19 @@ impl TaskManager {
         let mut inner = self.inner.exclusive_access();
         let current = inner.current_task;
         match id {
-            SYSCALL_WRITE => inner.tasks[current].syscall_counter.syscall_write_count += 1,
-            SYSCALL_EXIT => inner.tasks[current].syscall_counter.syscall_exit_count += 1,
-            SYSCALL_YIELD => inner.tasks[current].syscall_counter.syscall_yield_count += 1,
-            SYSCALL_GET_TIME => inner.tasks[current].syscall_counter.syscall_get_time_count += 1,
-            SYSCALL_TRACE => inner.tasks[current].syscall_counter.syscall_trace_count += 1,
-            _ => panic!("Unsupported syscall_id: {}", id),
+            SYSCALL_WRITE => inner.counters[current].syscall_write_count += 1,
+            SYSCALL_EXIT => inner.counters[current].syscall_exit_count += 1,
+            SYSCALL_YIELD => inner.counters[current].syscall_yield_count += 1,
+            SYSCALL_GET_TIME => inner.counters[current].syscall_get_time_count += 1,
+            SYSCALL_TRACE => inner.counters[current].syscall_trace_count += 1,
+            _ => {} // panic!("Unsupported syscall_id: {}", id),
         }
     }
     ///
     pub fn get_current_syscall_count(&self, syscall_id: usize) -> usize {
         let inner = self.inner.exclusive_access();
-        let c = &inner.counters[inner.current_task];
+        let current = inner.current_task;
+        let c = inner.counters[current];
         match syscall_id {
             SYSCALL_WRITE => c.syscall_write_count,
             SYSCALL_EXIT => c.syscall_exit_count,
